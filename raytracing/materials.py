@@ -448,3 +448,17 @@ class FusedSilica(Material):
     @classmethod
     def abbeNumber(cls):
         return 67.82
+
+class CaF2(Material):
+    """ All data from https://refractiveindex.info/tmp/data/main/CaF2/Malitson.html """
+    @classmethod
+    def n(cls, wavelength):
+        if wavelength > 10 or wavelength < 0.01:
+            raise ValueError("Wavelength must be in microns")
+        x = wavelength
+        n=(1+0.5675888/(1-(0.050263605/x)**2)+0.4710914/(1-(0.1003909/x)**2)+3.8484723/(1-(34.649040/x)**2))**.5
+        return n
+
+    @classmethod
+    def abbeNumber(cls):
+        return 94.99
