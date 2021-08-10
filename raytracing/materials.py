@@ -462,3 +462,17 @@ class CaF2(Material):
     @classmethod
     def abbeNumber(cls):
         return 94.99
+
+class N_BALF4(Material):
+    """ All data from https://refractiveindex.info/tmp/data/glass/schott/N-BALF4.html """
+    @classmethod
+    def n(cls, wavelength):
+        if wavelength > 10 or wavelength < 0.01:
+            raise ValueError("Wavelength must be in microns")
+        x = wavelength
+        n=(1+1.31004128/(1-0.0079659645/x**2)+0.142038259/(1-0.0330672072/x**2)+0.964929351/(1-109.19732/x**2))**.5
+        return n
+
+    @classmethod
+    def abbeNumber(cls):
+        return 53.87
