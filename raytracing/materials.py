@@ -450,18 +450,18 @@ class FusedSilica(Material):
         return 67.82
 
 class CaF2(Material):
-    """ All data from https://refractiveindex.info/tmp/data/main/CaF2/Malitson.html """
+    """ All data from https://refractiveindex.info/tmp/data/main/CaF2/Li.html """
     @classmethod
     def n(cls, wavelength):
         if wavelength > 10 or wavelength < 0.01:
             raise ValueError("Wavelength must be in microns")
         x = wavelength
-        n=(1+0.5675888/(1-(0.050263605/x)**2)+0.4710914/(1-(0.1003909/x)**2)+3.8484723/(1-(34.649040/x)**2))**.5
+        n=(1+0.33973+0.69913/(1-(0.09374/x)**2)+0.11994/(1-(21.18/x)**2)+4.35181/(1-(38.46/x)**2))**.5
         return n
 
     @classmethod
     def abbeNumber(cls):
-        return 94.99
+        return 95.31
 
 class N_BALF4(Material):
     """ All data from https://refractiveindex.info/tmp/data/glass/schott/N-BALF4.html """
