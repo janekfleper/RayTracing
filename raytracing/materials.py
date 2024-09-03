@@ -449,6 +449,34 @@ class FusedSilica(Material):
     def abbeNumber(cls):
         return 67.82
 
+class CaF2(Material):
+    """ All data from https://refractiveindex.info/tmp/data/main/CaF2/Li.html """
+    @classmethod
+    def n(cls, wavelength):
+        if wavelength > 10 or wavelength < 0.01:
+            raise ValueError("Wavelength must be in microns")
+        x = wavelength
+        n=(1+0.33973+0.69913/(1-(0.09374/x)**2)+0.11994/(1-(21.18/x)**2)+4.35181/(1-(38.46/x)**2))**.5
+        return n
+
+    @classmethod
+    def abbeNumber(cls):
+        return 95.31
+
+class N_BALF4(Material):
+    """ All data from https://refractiveindex.info/tmp/data/glass/schott/N-BALF4.html """
+    @classmethod
+    def n(cls, wavelength):
+        if wavelength > 10 or wavelength < 0.01:
+            raise ValueError("Wavelength must be in microns")
+        x = wavelength
+        n=(1+1.31004128/(1-0.0079659645/x**2)+0.142038259/(1-0.0330672072/x**2)+0.964929351/(1-109.19732/x**2))**.5
+        return n
+
+    @classmethod
+    def abbeNumber(cls):
+        return 53.87
+
 class N_SK16(Material):
     @classmethod
     def n(cls, wavelength):
@@ -470,7 +498,6 @@ class E_BAF11(Material):
             raise ValueError("Wavelength must be in microns")
         x = wavelength
         n = (2.71954649 - 0.0100472501 * x ** 2 + 0.0200301385 * x ** -2 + 0.000465868302 * x ** -4 - 7.51633336e-06 * x ** -6 + 1.77544989e-06 * x ** -8) ** .5
-
         return n
 
     @classmethod
@@ -651,4 +678,3 @@ class H_F4(Material):
     @classmethod
     def abbeNumber(cls):
         return 36.35
-
