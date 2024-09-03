@@ -31,10 +31,10 @@ class Figure:
 
         self.styles = dict()
         self.styles['default'] = {'rayColors': ['b', 'r', 'g'], 'lampRayColors': ['y'], 'onlyAxialRay': False,
-                                  'imageColor': 'r', 'objectColor': 'b', 'onlyPrincipalAndAxialRays': True,
-                                  'limitObjectToFieldOfView': True, 'removeBlockedRaysCompletely': False,
-                                  'fontScale': 1.2, 'showFOV': False, 'showObjectImage': True,
-                                  'FOVColors': ['blue', 'red']}
+                                  'imageColor': 'r', 'fillImage': True, 'objectColor': 'b', 'fillObject': True,
+                                  'onlyPrincipalAndAxialRays': True, 'limitObjectToFieldOfView': True,
+                                  'removeBlockedRaysCompletely': False, 'fontScale': 1.2, 'showFOV': False,
+                                  'showObjectImage': True, 'FOVColors': ['blue', 'red']}
         self.styles['publication'] = self.styles['default'].copy()
         self.styles['presentation'] = self.styles['default'].copy()  # same as default for now
         self.styles['publication'].update({'rayColors': ['0.4', '0.2', '0.6'],
@@ -58,9 +58,10 @@ class Figure:
 
     def design(self, style: str = None,
                rayColors: List[Union[str, tuple]] = None, onlyAxialRay: bool = None,
-               imageColor: Union[str, tuple] = None, objectColor: Union[str, tuple] = None,
+               imageColor: Union[str, tuple] = None, fillImage: bool = None,
+               objectColor: Union[str, tuple] = None, fillObject: bool = None,
                fontScale: float = None, lampRayColors: List[Union[str, tuple]] = None,
-               FOVColors: list = None):
+               FOVColors: list = None, showObjectImage: bool = None):
         """ Update the design parameters of the figure.
         All parameters are None by default to allow for the update of one parameter at a time.
 
@@ -79,10 +80,16 @@ class Figure:
             Color of image arrows. Default to 'r'.
         objectColor : Union[str, tuple], optional
             Color of object arrow. Default to 'b'.
+        fillImage : bool, optional
+            Fill the image arrows. Default to True.
+        fillObject : bool, optional
+            Fill the object arrow. Default to True.
         FOVColors: list
             The 2 colors to use for the graphics of FOV.
         fontScale : float, optional
             Base scale factor for the size of all fonts used. Default to 1.
+        showObjectImage : bool, optional
+            Set visibility of ObjectRays. Default to True.
         """
         if style is not None:
             if style in self.styles.keys():
@@ -92,8 +99,9 @@ class Figure:
 
         newDesignParams = {'rayColors': rayColors, 'onlyAxialRay': onlyAxialRay,
                            'imageColor': imageColor, 'objectColor': objectColor,
+                           'fillImage': fillImage, 'fillObject': fillObject,
                            'fontScale': fontScale, 'lampRayColors': lampRayColors,
-                           'FOVColors': FOVColors}
+                           'FOVColors': FOVColors, 'showObjectImage': showObjectImage}
         for key, value in newDesignParams.items():
             if value is not None:
                 self.designParams[key] = value
@@ -102,7 +110,7 @@ class Figure:
     def fontScale(self):
         return self.designParams['fontScale']
 
-    def initializeDisplay(self):
+    def applyDesign(self):
         """ Configure the imaging path and the figure according to the display conditions. """
 
         note1 = ""
@@ -188,21 +196,25 @@ class Figure:
             elif graphic is not None:
                 graphics.append(graphic)
             z += element.L
+        if not self.path.showElementLabels:
+            for graphic in graphics:
+                graphic.label = None
         return graphics
 
     def setGraphicsFromRaysList(self):
         for rays in self.raysList:
             instance = type(rays).__name__
-            if instance is 'ObjectRays':
+            if instance == 'ObjectRays':
                 objectKey = kObjectImageZKey.format(rays.z) if rays.z != 0 else kObjectImageKey
-                color = 'b' if rays.color is None else rays.color
-                self.graphicGroups[objectKey] = [ObjectGraphic(rays.yMax * 2, x=rays.z, color=color, label=rays.label)]
-                if rays.color is None:
-                    self.graphicGroups[objectKey].extend(self.graphicsOfConjugatePlanes(rays.yMax * 2, x=rays.z))
-                else:
+                if self.path.showObject:
+                    self.graphicGroups[objectKey] = [ObjectGraphic(rays.yMax * 2, x=rays.z,
+                                                                   color=self.designParams['objectColor'],
+                                                                   fill=self.designParams['fillObject'], label=rays.label)]
+                if self.path.showImages:
                     self.graphicGroups[objectKey].extend(self.graphicsOfConjugatePlanes(rays.yMax * 2, x=rays.z,
-                                                                                        fill=False, color=color))
-            if instance is 'LampRays':
+                                                                                        color=self.designParams['imageColor'],
+                                                                                        fill=self.designParams['fillImage']))
+            if instance == 'LampRays':
                 lampKey = 'Lamp (z={0:.2f})'.format(rays.z) if rays.z != 0 else kLampKey
                 self.graphicGroups[lampKey] = [LampGraphic(rays.yMax * 2, x=rays.z, label=rays.label)]
 
@@ -211,12 +223,12 @@ class Figure:
             rayTrace = self.rayTraceLines(rays=rays)
 
             instance = type(rays).__name__
-            if instance is 'ObjectRays':
+            if instance == 'ObjectRays':
                 if rays.z == 0:
                     self.lineGroups[kObjectImageKey].extend(rayTrace)
                 else:
                     self.lineGroups[kObjectImageZKey.format(rays.z)] = rayTrace
-            elif instance is 'LampRays':
+            elif instance == 'LampRays':
                 self.designParams['showObjectImage'] = False
                 if rays.z == 0:
                     self.lineGroups[kLampKey].extend(rayTrace)
@@ -295,7 +307,8 @@ class Figure:
         points = []
         halfHeight = self.displayRange / 2
         for zStr, label in labels.items():
-            points.append(Point(text=label, x=float(zStr), y=-halfHeight * 0.5, fontsize=12))
+            text = label if self.path.showPointsOfInterestLabels else None
+            points.append(Point(text=text, x=float(zStr), y=-halfHeight * 0.5, fontsize=12))
         return points
 
     @property
@@ -373,7 +386,7 @@ class Figure:
                 dz = rays.z
             if rays.rayColors is not None:
                 colors = rays.rayColors
-            elif type(rays).__name__ is 'LampRays':
+            elif type(rays).__name__ == 'LampRays':
                 colors = self.designParams['lampRayColors']
 
         if dz != 0:
@@ -535,7 +548,7 @@ class Figure:
         if not self.designParams['showObjectImage']:
             self.setGroupVisibility(kObjectImageKey, False)
 
-        if backend is 'matplotlib':
+        if backend == 'matplotlib':
             mplFigure = self.mplFigure
             mplFigure.create(comments, title)
             if display3D:
@@ -553,7 +566,7 @@ class Figure:
             self.lineGroups['rays'].extend(self.beamTraceLines(beam))
             self.annotations.extend(self.beamWaistAnnotations(beam))
 
-        if backend is 'matplotlib':
+        if backend == 'matplotlib':
             mplFigure = self.mplFigure
             mplFigure.create(comments, title)
             if display3D:
@@ -672,7 +685,8 @@ class MplFigure(Figure):
     def drawPoints(self):
         for point in self.points:
             if point.hasPointMarker:
-                self.axes.plot([point.x], [0], 'ko', markersize=3, color=point.color, linewidth=0.4)
+                y = 0 if point.fixToAxis else point.y
+                self.axes.plot([point.x], [y], marker='o', markersize=5, color=point.color, linewidth=0.4)
             if point.text is not None:
                 point.fontsize *= self.fontScale
                 self.labels.append(point)
@@ -691,26 +705,16 @@ class MplFigure(Figure):
         if kElementsKey in visibility.keys():
             visibility.pop(kElementsKey)
 
-        subAxes = plt.axes([0.81, 0.4, 0.1, 0.5], frameon=False, anchor='NW')
-        self.checkBoxes = CheckButtons(subAxes, visibility.keys(), visibility.values())
+        subAxes = plt.axes((0.81, 0.4, 0.1, 0.5), frameon=False, anchor='NW')
 
-        step = 0.15
-        for i, (label, rectangle, lines) in enumerate(zip(self.checkBoxes.labels,
-                                                          self.checkBoxes.rectangles,
-                                                          self.checkBoxes.lines)):
-            h = 0.85 - step * i
-            label.set_fontsize(11)
-            rectangle.set_x(0.05)
-            rectangle.set_y(h)
-            rectangle.set(width=0.12, height=0.04)
-            label.set_y(h + 0.02)
-            label.set_x(0.2)
-
-            lineA, lineB = lines
-            lineA.set_xdata([0.05, 0.17])
-            lineB.set_xdata([0.05, 0.17])
-            lineA.set_ydata([h, h + 0.04])
-            lineB.set_ydata([h + 0.04, h])
+        nBoxes = len(visibility)
+        heightStep = 0.15
+        offsets = [(0.11, 0.85 - heightStep * i) for i in range(nBoxes)]
+        checkProps = {'sizes': [100] * nBoxes, 'offsets': offsets}
+        self.checkBoxes = CheckButtons(
+            subAxes, visibility.keys(), visibility.values(), check_props=checkProps, frame_props=checkProps
+        )
+        self.checkBoxes.set_label_props({'x': [0.22] * nBoxes, 'y': [v[1] - 0.003 for v in offsets], 'fontsize': [11] * nBoxes})
 
         self.checkBoxes.on_clicked(self.onCheckBoxCallback)
 

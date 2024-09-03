@@ -1,6 +1,8 @@
 from raytracing.graphicComponents import *
+from .matrix import Lens, Space, Aperture
 from .specialtylenses import Objective
 from .matrixgroup import MatrixGroup
+from .matrix import Space, Lens, Aperture
 import numpy as np
 
 
@@ -253,6 +255,11 @@ class MatrixGraphic(Graphic):
         -----
         If the component has no power (i.e. C == 0) this will fail.
         """
+        fig = self.createFigure()
+        fig.display2D(interactive=False)
+        return fig
+
+    def createFigure(self) -> 'Figure':
         self.points = []
         self.points.extend(self.cardinalPoints)
         if self.matrix.L != 0:
@@ -264,13 +271,13 @@ class MatrixGraphic(Graphic):
         from .figure import MplFigure
         from .imagingpath import ImagingPath
         path = ImagingPath(elements=[self.matrix])
-        figure = MplFigure(path)
-        figure.graphicGroups['Elements'] = [self]
+        mplFigure = MplFigure(path)
+        mplFigure.graphicGroups['Elements'] = [self]
         if self.displayComponents:
             path.elements = self.matrix
-            figure.setGraphicsFromOpticalPath()
-        figure.create(title="Element properties")
-        figure.display2D(interactive=False)
+            mplFigure.setGraphicsFromOpticalPath()
+        mplFigure.create(title="Element properties")
+        return mplFigure
 
 
 class LensGraphic(MatrixGraphic):
@@ -450,18 +457,19 @@ class ObjectiveGraphic(MatrixGroupGraphic):
 
 class GraphicOf:
     def __new__(cls, element, x=0.0, minSize=0) -> Union[MatrixGraphic, None, list]:
+        elementType = type(element)
         instance = type(element).__name__
-        if type(element) is Objective or issubclass(type(element), Objective):
+        if issubclass(elementType, Objective):
             return ObjectiveGraphic(element, x=x)
-        if instance is 'Lens':
+        if issubclass(elementType, Lens):
             return LensGraphic(element, x=x, minSize=minSize)
-        if instance is 'Space':
+        if issubclass(elementType, Space):
             return None
-        if instance is 'Aperture':
+        if issubclass(elementType, Aperture):
             return ApertureGraphic(element, x=x)
         if element.surfaces:
             return SurfacesGraphic(element, x=x)
-        if issubclass(type(element), MatrixGroup):
+        if issubclass(elementType, MatrixGroup):
             return MatrixGroupGraphic(element, x=x)
         else:
             return MatrixGraphic(element, x=x)

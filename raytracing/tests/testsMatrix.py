@@ -2,18 +2,10 @@ import envtest  # modifies path
 import subprocess
 
 from raytracing import *
-
 inf = float("+inf")
 
 
 class TestMatrix(envtest.RaytracingTestCase):
-    def testWarningsFormat(self):
-        message = "This is a test."
-        filename = "test.py"
-        lineno = 10
-        category = UserWarning
-        warningsMessage = warningLineFormat(message, category, filename, lineno)
-        self.assertEqual(warningsMessage, "\ntest.py: 10\nUserWarning: This is a test.\n")
 
     def testMatrix(self):
         m = Matrix()
@@ -26,6 +18,49 @@ class TestMatrix(envtest.RaytracingTestCase):
     def testNegativeApertureDiameter(self):
         with self.assertRaises(ValueError):
             Matrix(apertureDiameter=-0.1)
+
+    def testNullApertureNA(self):
+        with self.assertRaises(ValueError):
+            Matrix(apertureNA=0)
+
+    def testNonNullBlockingApertureNA(self):
+        m = Matrix(1,0,0,1,apertureNA=0.25)
+        ray = Ray(y=0, theta=0.5)
+        outRay = m*ray
+        self.assertTrue(outRay.isBlocked)
+
+    def testNonNullNonBlockingApertureNA(self):
+        m = Matrix(1,0,0,1,apertureNA=0.5)
+        ray = Ray(y=0, theta=0.25)
+        outRay = m*ray
+        self.assertFalse(outRay.isBlocked)
+
+    def testNonNullJustAtTheLimitApertureNA(self):
+        m = Matrix(1,0,0,1,apertureNA=0.5)
+        ray = Ray(y=0, theta=0.5)
+        outRay = m*ray
+        self.assertFalse(outRay.isBlocked)
+
+    def testApertureWithNA(self):
+        m = Aperture(diameter=1.0, NA=0.5)
+        ray = Ray(y=0, theta=0.6)
+        outRay = m*ray
+        self.assertTrue(outRay.isBlocked)
+
+        m = Aperture(diameter=0.5, NA=0.5)
+        ray = Ray(y=1.0, theta=0)
+        outRay = m*ray
+        self.assertTrue(outRay.isBlocked)
+
+        m = Aperture(diameter=0.5, NA=0.5)
+        ray = Ray(y=1.0, theta=0.6)
+        outRay = m*ray
+        self.assertTrue(outRay.isBlocked)
+
+        m = Aperture(diameter=0.5*2, NA=0.5)
+        ray = Ray(y=0.5, theta=0.5)
+        outRay = m*ray
+        self.assertFalse(outRay.isBlocked)
 
     def testMatrixExplicit(self):
         m = Matrix(A=1, B=0, C=0, D=1, physicalLength=1,

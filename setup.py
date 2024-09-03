@@ -3,24 +3,24 @@ import setuptools
 """ 
 To distribute:
 =============
-rm dist/*; python setup.py sdist bdist_wheel; python -m twine upload dist/* 
+rm dist/*; python3 setup.py sdist bdist_wheel; python3 -m twine upload dist/* 
 
 """
 
 
 setuptools.setup(
     name="raytracing",
-    version="1.3.6",
+    version="1.3.12",
     url="https://github.com/DCC-Lab/RayTracing",
     author="Daniel Cote",
     author_email="dccote@cervo.ulaval.ca",
     description="Simple optical ray tracing library \
-    to validate the design of an optical system\
-    (lenses positions and sizes, focal lengths,\
-    aperture and field stops). Support for Monte Carlo\
-    raytracing to estimate transmission efficiency and powers,\
+    to validate the design of an optical system \
+    (lenses positions and sizes, focal lengths, \
+    aperture and field stops). Support for Monte Carlo \
+    raytracing to estimate transmission efficiency and powers, \
     limited but functional Zemax file loader for lenses, several \
-    material dispersion curves included for chromatic aberrations\
+    material dispersion curves included for chromatic aberrations \
     all coming from http://refractiveindex.info",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -28,7 +28,7 @@ setuptools.setup(
     keywords='optics optical lens ray tracing matrix matrices aperture field stop\
     monte carlo design raytracing zemax chromatic aberrations',
     packages=setuptools.find_packages(),
-    install_requires=['matplotlib>=3', 'numpy','pygments'],
+    install_requires=['matplotlib>=3.7', 'numpy','pygments'],
     python_requires='>=3.6',
     package_data = {
         # If any package contains *.txt or *.rst files, include them:

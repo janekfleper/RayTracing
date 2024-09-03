@@ -48,7 +48,7 @@ class ImagingPath(MatrixGroup):
         The maximum height to be considered when calculating the field stop (default=10000.0)
     showObject : bool
         If True, the object will be shown on display (default=True)
-    showImage : bool
+    showImages : bool
         If True, the image will be shown on display (default=True)
     showEntrancePupil : bool
         If True, the entrance pupil will be shown on display (default=False)
@@ -58,8 +58,6 @@ class ImagingPath(MatrixGroup):
         If True, the points of interests will be shown on display (default=True)
     showPointsOfInterestLabels : bool
         If True, the labels of the points of interests will be shown on display (default=True)
-    showPlanesAcrossPointsOfInterest : bool
-        If True, the planes across the points of interests will be shown (default=True)
 
     Examples
     --------
@@ -100,13 +98,12 @@ class ImagingPath(MatrixGroup):
         # Display properties
         self.figure = Figure(opticalPath=self)
         self.design = self.figure.design
+        self.showEntrancePupil = False
+        self.showPointsOfInterest = True
         self.showObject = True
         self.showImages = True
-        self.showEntrancePupil = False
         self.showElementLabels = True
-        self.showPointsOfInterest = True
         self.showPointsOfInterestLabels = True
-        self.showPlanesAcrossPointsOfInterest = True
         super(ImagingPath, self).__init__(elements=elements, label=label)
 
     @property
@@ -980,7 +977,7 @@ class ImagingPath(MatrixGroup):
         if rays is not None:
             raysList.append(rays)
 
-        self.figure.initializeDisplay()
+        self.figure.applyDesign()
 
         if len(raysList) == 0:
             self.figure.designParams['showFOV'] = True
@@ -994,16 +991,21 @@ class ImagingPath(MatrixGroup):
                                   'Using default ObjectRays.', category=BeginnerHint)
 
         if 'ObjectRays' not in [type(rays).__name__ for rays in raysList]:
-            if self.fanAngle is None:
-                self.fanAngle = np.tan(self.figure.displayRange / 2 / self.L / 5)
+            fanAngle = self.fanAngle
+            if fanAngle is None:
+                fanAngle = np.tan(self.figure.displayRange / 2 / self.L / 5)
             defaultObject = ObjectRays(self.objectHeight, z=self.objectPosition,
-                                       halfAngle=self.fanAngle, T=self.rayNumber, H=self.fanNumber)
+                                       halfAngle=fanAngle, T=self.rayNumber, H=self.fanNumber)
             raysList.append(defaultObject)
         else:
             self.figure.designParams['showObjectImage'] = True
 
         self.figure.display(raysList=raysList, comments=comments, title=self.label,
                             backend='matplotlib', display3D=False, interactive=interactive, filepath=filePath)
+
+        savedDesignParams = self.figure.designParams
+        self.figure = Figure(opticalPath=self)
+        self.design = savedDesignParams
 
     def saveFigure(self, filePath, rays=None, raysList=None, removeBlocked=True, comments=None,
                    onlyPrincipalAndAxialRays=None, limitObjectToFieldOfView=None):
